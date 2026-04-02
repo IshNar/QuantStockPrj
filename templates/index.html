@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>퀀트 인사이트</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Noto Sans KR', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+      colors: {
+        dark: { 50:'#f6faff', 100:'#e2e8f0', 200:'#c8d6e5', 300:'#94a3b8', 400:'#64748b', 500:'#475569', 600:'#334155', 700:'#1e293b', 800:'#111827', 900:'#0a0e17', 950:'#060911' },
+        accent: { blue:'#3b82f6', cyan:'#06b6d4', indigo:'#6366f1', emerald:'#10b981', amber:'#f59e0b', rose:'#f43f5e' },
+      },
+    }
+  }
+}
+</script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Noto Sans KR','Inter',sans-serif; background:#060911; color:#e2e8f0; overflow-x:hidden; min-height:100vh; }
+
+.animated-bg {
+  position:fixed; inset:0; z-index:0;
+  background: radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(6,182,212,0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 80%, rgba(99,102,241,0.05) 0%, transparent 50%),
+              #060911;
+}
+
+.glass { background:rgba(17,24,39,0.6); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.06); }
+.glass-strong { background:rgba(17,24,39,0.85); backdrop-filter:blur(30px); border:1px solid rgba(255,255,255,0.08); }
+
+.glow-input:focus {
+  outline:none;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.3), 0 0 30px rgba(59,130,246,0.15), 0 0 60px rgba(6,182,212,0.08);
+  border-color: rgba(59,130,246,0.5);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(59,130,246,0.35);
+}
+.btn-primary:active { transform: translateY(0); }
+
+.report-section {
+  background: rgba(17,24,39,0.5);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 28px 32px;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+  animation: fadeSlideUp 0.5s ease forwards;
+  opacity: 0;
+}
+.report-section:hover {
+  border-color: rgba(59,130,246,0.25);
+  box-shadow: 0 4px 30px rgba(59,130,246,0.08);
+  background: rgba(17,24,39,0.65);
+}
+
+@keyframes fadeSlideUp {
+  from { opacity:0; transform:translateY(20px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.report-section:nth-child(1) { animation-delay:0.05s; }
+.report-section:nth-child(2) { animation-delay:0.15s; }
+.report-section:nth-child(3) { animation-delay:0.25s; }
+.report-section:nth-child(4) { animation-delay:0.35s; }
+.report-section:nth-child(5) { animation-delay:0.45s; }
+
+.md-content h2 { font-size:1.35rem; font-weight:700; margin-bottom:16px; color:#f1f5f9; display:flex; align-items:center; gap:10px; }
+.md-content h3 { font-size:1.1rem; font-weight:600; margin:18px 0 10px; color:#e2e8f0; }
+.md-content p { line-height:1.85; margin-bottom:12px; color:#c8d6e5; font-size:0.95rem; }
+.md-content strong { color:#f1f5f9; font-weight:600; }
+.md-content ul, .md-content ol { margin:10px 0 14px 20px; color:#c8d6e5; }
+.md-content li { margin-bottom:8px; line-height:1.7; font-size:0.95rem; }
+.md-content a { color:#60a5fa; text-decoration:none; border-bottom:1px solid rgba(96,165,250,0.3); transition:all 0.2s; }
+.md-content a:hover { color:#93c5fd; border-bottom-color:#93c5fd; }
+.md-content hr { border:none; border-top:1px solid rgba(255,255,255,0.08); margin:20px 0; }
+.md-content blockquote { border-left:3px solid #3b82f6; padding:10px 16px; margin:12px 0; background:rgba(59,130,246,0.06); border-radius:0 8px 8px 0; }
+.md-content code { font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px; font-size:0.88rem; }
+.md-content table { width:100%; border-collapse:collapse; margin:14px 0; }
+.md-content th { background:rgba(59,130,246,0.1); padding:10px 14px; text-align:left; font-weight:600; border-bottom:2px solid rgba(59,130,246,0.2); font-size:0.9rem; }
+.md-content td { padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:0.9rem; }
+.md-content tr:hover td { background:rgba(255,255,255,0.02); }
+
+.loading-pulse span {
+  display:inline-block; width:10px; height:10px; border-radius:50%;
+  background:linear-gradient(135deg, #3b82f6, #06b6d4);
+  animation: loadPulse 1.4s ease-in-out infinite;
+}
+.loading-pulse span:nth-child(2) { animation-delay:0.2s; }
+.loading-pulse span:nth-child(3) { animation-delay:0.4s; }
+@keyframes loadPulse {
+  0%,100% { opacity:0.3; transform:scale(0.7); }
+  50% { opacity:1; transform:scale(1.3); }
+}
+
+.status-cycle { animation: fadeText 1s ease-in-out; }
+@keyframes fadeText {
+  0% { opacity:0; transform:translateY(8px); }
+  100% { opacity:1; transform:translateY(0); }
+}
+
+::-webkit-scrollbar { width:7px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:10px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.18); }
+
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px);
+  z-index:100; display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition: opacity 0.3s ease;
+}
+.modal-overlay.active { opacity:1; pointer-events:auto; }
+.modal-content {
+  background:#111827; border:1px solid rgba(255,255,255,0.1); border-radius:20px;
+  padding:36px; width:90%; max-width:520px;
+  transform:scale(0.95) translateY(10px); transition: transform 0.3s ease;
+}
+.modal-overlay.active .modal-content { transform:scale(1) translateY(0); }
+
+select, input[type="password"], input[type="text"] {
+  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+  color:#e2e8f0; border-radius:10px; padding:12px 16px; width:100%;
+  font-size:0.95rem; transition: all 0.2s;
+}
+select:focus, input[type="password"]:focus { outline:none; border-color:rgba(59,130,246,0.5); box-shadow:0 0 0 3px rgba(59,130,246,0.15); }
+select option { background:#1e293b; color:#e2e8f0; }
+
+.hero-title {
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #06b6d4 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.tag-chip {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:4px 12px; border-radius:20px; font-size:0.78rem; font-weight:500;
+  background:rgba(59,130,246,0.1); color:#60a5fa; border:1px solid rgba(59,130,246,0.15);
+}
+
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+
+<div class="animated-bg"></div>
+
+<!-- Navbar -->
+<nav class="fixed top-0 left-0 right-0 z-50 glass-strong" style="border-bottom:1px solid rgba(255,255,255,0.06)">
+  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,#3b82f6,#6366f1)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <span class="font-bold text-lg tracking-tight">퀀트 인사이트</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <div id="provider-badge" class="tag-chip" style="display:none"></div>
+      <button onclick="openSettings()" class="p-2 rounded-lg hover:bg-white/5 transition-colors" title="설정">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main class="relative z-10 pt-16 min-h-screen">
+
+  <!-- Hero / Input Section -->
+  <div id="hero-section" class="flex flex-col items-center justify-center px-6" style="min-height:calc(100vh - 64px)">
+    <div class="text-center mb-10">
+      <h1 class="hero-title text-5xl font-extrabold mb-4 tracking-tight">퀀트 인사이트</h1>
+      <p class="text-dark-300 text-lg max-w-xl mx-auto leading-relaxed">
+        AI 기반 퀀트 분석으로 글로벌 매크로, 재무 펀더멘털, 뉴스 센티먼트를 융합하여<br>시장의 확률적 우위를 도출합니다
+      </p>
+    </div>
+    <div class="w-full max-w-2xl">
+      <div class="flex gap-3">
+        <input id="query-input" type="text" class="flex-1 h-14 px-6 rounded-xl text-base glow-input glass" style="border:1px solid rgba(255,255,255,0.1)" placeholder="종목 또는 질문을 입력하세요... (예: NVDA, 테슬라 전망, 반도체 섹터 분석)" onkeydown="if(event.key==='Enter')runAnalysis()">
+        <button onclick="runAnalysis()" class="btn-primary h-14 px-8 rounded-xl font-semibold text-white flex items-center gap-2 whitespace-nowrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          분석 시작
+        </button>
+      </div>
+      <div class="flex flex-wrap gap-2 mt-4 justify-center">
+        <button onclick="setQuery('NVDA (엔비디아) 단기 전망')" class="tag-chip hover:bg-accent-blue/20 transition cursor-pointer">NVDA</button>
+        <button onclick="setQuery('TSLA (테슬라) 주가 분석')" class="tag-chip hover:bg-accent-blue/20 transition cursor-pointer">TSLA</button>
+        <button onclick="setQuery('미국 반도체 섹터 전망')" class="tag-chip hover:bg-accent-blue/20 transition cursor-pointer">반도체</button>
+        <button onclick="setQuery('S&P 500 이번 주 방향성')" class="tag-chip hover:bg-accent-blue/20 transition cursor-pointer">S&P 500</button>
+        <button onclick="setQuery('금리 인하와 기술주 영향')" class="tag-chip hover:bg-accent-blue/20 transition cursor-pointer">금리/기술주</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Section -->
+  <div id="loading-section" class="hidden flex flex-col items-center justify-center px-6" style="min-height:calc(100vh - 64px)">
+    <div class="text-center">
+      <div class="loading-pulse mb-6"><span></span> <span></span> <span></span></div>
+      <p id="loading-status" class="text-dark-300 text-lg status-cycle">글로벌 매크로 이슈 분석 중...</p>
+      <p class="text-dark-400 text-sm mt-3">약 30~60초 소요됩니다</p>
+    </div>
+  </div>
+
+  <!-- Result Section -->
+  <div id="result-section" class="hidden max-w-4xl mx-auto px-6 py-10">
+    <div class="mb-8 flex gap-3">
+      <input id="query-input-top" type="text" class="flex-1 h-12 px-5 rounded-xl text-sm glow-input glass" style="border:1px solid rgba(255,255,255,0.1)" placeholder="새로운 종목 또는 질문..." onkeydown="if(event.key==='Enter')runAnalysisFromTop()">
+      <button onclick="runAnalysisFromTop()" class="btn-primary h-12 px-6 rounded-xl font-semibold text-white text-sm flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        분석
+      </button>
+    </div>
+    <div id="query-label" class="mb-6">
+      <span class="text-dark-400 text-sm">분석 대상</span>
+      <h2 id="query-display" class="text-2xl font-bold mt-1"></h2>
+    </div>
+    <div id="report-content" class="md-content"></div>
+  </div>
+
+</main>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="modal-overlay" onclick="if(event.target===this)closeSettings()">
+  <div class="modal-content">
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-xl font-bold">⚙️ 설정</h2>
+      <button onclick="closeSettings()" class="p-1 rounded-lg hover:bg-white/10 transition">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="space-y-5">
+      <div>
+        <label class="text-sm font-medium text-dark-300 mb-2 block">API 키</label>
+        <div class="flex gap-2">
+          <input id="setting-apikey" type="password" placeholder="sk-... (OpenAI) 또는 AI... (Gemini) 키 입력" class="flex-1">
+          <button onclick="fetchModelsFromKey()" id="btn-fetch-models" class="px-4 rounded-xl text-sm font-semibold whitespace-nowrap btn-primary text-white flex items-center gap-2" style="min-width:120px">
+            <svg id="fetch-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 11-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
+            <svg id="fetch-spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="hidden" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 019.17 6"/></svg>
+            <span id="fetch-btn-text">모델 불러오기</span>
+          </button>
+        </div>
+        <p class="text-xs text-dark-400 mt-2">키를 입력 후 '모델 불러오기'를 클릭하면 사용 가능한 모델이 자동으로 표시됩니다</p>
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-sm font-medium text-dark-300">AI 제공자</label>
+          <span id="provider-auto-label" class="text-xs px-2 py-0.5 rounded-full bg-accent-blue/15 text-accent-blue hidden">자동 감지됨</span>
+        </div>
+        <select id="setting-provider" disabled style="opacity:0.7;cursor:not-allowed">
+          <option value="">키를 먼저 입력하세요</option>
+          <option value="openai">OpenAI (GPT)</option>
+          <option value="gemini">Google Gemini</option>
+        </select>
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-sm font-medium text-dark-300">모델 선택</label>
+          <span id="model-count" class="text-xs text-dark-400"></span>
+        </div>
+        <select id="setting-model" disabled style="opacity:0.7;cursor:not-allowed">
+          <option value="">모델을 먼저 불러오세요</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="flex gap-3 mt-8">
+      <button onclick="closeSettings()" class="flex-1 h-12 rounded-xl font-medium border border-white/10 hover:bg-white/5 transition">취소</button>
+      <button onclick="saveSettings()" id="btn-save" class="flex-1 h-12 rounded-xl font-semibold btn-primary text-white">저장</button>
+    </div>
+    <div id="settings-msg" class="text-center text-sm mt-4 hidden"></div>
+  </div>
+</div>
+
+<script>
+/* ── REST helper ── */
+async function api(endpoint, body) {
+  const opts = body !== undefined
+    ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }
+    : { method:'GET' };
+  const resp = await fetch(endpoint, opts);
+  return resp.json();
+}
+
+const STATUS_MESSAGES = [
+  "글로벌 매크로 이슈 분석 중...",
+  "관련 뉴스 및 데이터 수집 중...",
+  "재무 데이터 분석 중...",
+  "센티먼트 분석 진행 중...",
+  "퀀트 리포트 생성 중...",
+  "최종 확률 도출 중...",
+];
+
+let statusIndex = 0;
+let statusInterval = null;
+let currentConfig = {};
+let fetchedModels = [];
+let fetchedProvider = '';
+
+marked.setOptions({ breaks: true, gfm: true });
+
+function setQuery(q) { document.getElementById('query-input').value = q; }
+
+function showSection(id) {
+  ['hero-section','loading-section','result-section'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
+}
+
+function startLoadingStatus() {
+  statusIndex = 0;
+  const el = document.getElementById('loading-status');
+  el.textContent = STATUS_MESSAGES[0];
+  statusInterval = setInterval(() => {
+    statusIndex = (statusIndex + 1) % STATUS_MESSAGES.length;
+    el.style.animation = 'none'; el.offsetHeight;
+    el.style.animation = 'fadeText 0.8s ease-in-out';
+    el.textContent = STATUS_MESSAGES[statusIndex];
+  }, 4000);
+}
+
+function stopLoadingStatus() {
+  if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+}
+
+async function runAnalysis() {
+  const query = document.getElementById('query-input').value.trim();
+  if (!query) return;
+  showSection('loading-section');
+  startLoadingStatus();
+  try {
+    const result = await api('/api/analyze', { query });
+    stopLoadingStatus();
+    if (result.error) { renderReport('\u274c 오류\n\n' + result.message, query); }
+    else { renderReport(result.report, query); }
+    showSection('result-section');
+    document.getElementById('query-input-top').value = '';
+    window.scrollTo({top:0, behavior:'smooth'});
+  } catch (e) {
+    stopLoadingStatus();
+    renderReport('\u274c 시스템 오류가 발생했습니다.\n\n' + e.toString(), query);
+    showSection('result-section');
+  }
+}
+
+async function runAnalysisFromTop() {
+  const query = document.getElementById('query-input-top').value.trim();
+  if (!query) return;
+  document.getElementById('query-input').value = query;
+  await runAnalysis();
+}
+
+function renderReport(markdown, query) {
+  document.getElementById('query-display').textContent = query;
+  const sections = splitIntoSections(markdown);
+  const container = document.getElementById('report-content');
+  container.innerHTML = '';
+
+  if (sections.length === 0) {
+    const div = document.createElement('div');
+    div.className = 'report-section';
+    div.innerHTML = '<div class="md-content">' + marked.parse(markdown) + '</div>';
+    container.appendChild(div);
+    return;
+  }
+
+  const sectionBorders = {
+    'Macro':'rgba(59,130,246,0.3)', 'Stock':'rgba(16,185,129,0.3)',
+    'Micro':'rgba(99,102,241,0.3)', 'Probability':'rgba(245,158,11,0.3)',
+    'References':'rgba(6,182,212,0.3)',
+  };
+
+  sections.forEach(sec => {
+    const div = document.createElement('div');
+    div.className = 'report-section';
+    let matchedKey = Object.keys(sectionBorders).find(k => sec.title.includes(k));
+    if (matchedKey) div.style.borderLeft = '3px solid ' + sectionBorders[matchedKey];
+    div.innerHTML = '<div class="md-content">' + marked.parse(sec.content) + '</div>';
+    container.appendChild(div);
+  });
+
+  container.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      api('/api/open-url', { url: link.href });
+    });
+  });
+}
+
+function splitIntoSections(md) {
+  const lines = md.split('\n');
+  const sections = [];
+  let current = null;
+  lines.forEach(line => {
+    if (line.match(/^##\s/)) {
+      if (current) sections.push(current);
+      current = { title: line, content: line + '\n' };
+    } else {
+      if (current) { current.content += line + '\n'; }
+      else if (line.trim()) { current = { title: 'intro', content: line + '\n' }; }
+    }
+  });
+  if (current) sections.push(current);
+  return sections;
+}
+
+/* ── Settings ── */
+
+async function openSettings() {
+  try {
+    const config = await api('/api/config');
+    currentConfig = config;
+    document.getElementById('setting-apikey').value = config.api_key || '';
+    updateProviderBadge(config);
+
+    if (config.api_key && config.api_provider) {
+      document.getElementById('setting-provider').value = config.api_provider;
+      document.getElementById('setting-provider').disabled = false;
+      document.getElementById('setting-provider').style.opacity = '1';
+      document.getElementById('setting-provider').style.cursor = '';
+    } else {
+      resetProviderAndModel();
+    }
+
+    if (config.api_key && config.model) {
+      const sel = document.getElementById('setting-model');
+      sel.innerHTML = '';
+      const opt = document.createElement('option');
+      opt.value = config.model; opt.textContent = config.model; opt.selected = true;
+      sel.appendChild(opt);
+      sel.disabled = false;
+      sel.style.opacity = '1'; sel.style.cursor = '';
+      document.getElementById('model-count').textContent = '저장된 모델 (다시 불러오기 가능)';
+    }
+  } catch(e) {}
+  document.getElementById('settings-modal').classList.add('active');
+}
+
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('active');
+  document.getElementById('settings-msg').classList.add('hidden');
+}
+
+function resetProviderAndModel() {
+  const prov = document.getElementById('setting-provider');
+  prov.value = ''; prov.disabled = true;
+  prov.style.opacity = '0.7'; prov.style.cursor = 'not-allowed';
+  document.getElementById('provider-auto-label').classList.add('hidden');
+
+  const mod = document.getElementById('setting-model');
+  mod.innerHTML = '<option value="">모델을 먼저 불러오세요</option>';
+  mod.disabled = true; mod.style.opacity = '0.7'; mod.style.cursor = 'not-allowed';
+  document.getElementById('model-count').textContent = '';
+  fetchedModels = []; fetchedProvider = '';
+}
+
+function setFetchLoading(loading) {
+  const btn = document.getElementById('btn-fetch-models');
+  const icon = document.getElementById('fetch-icon');
+  const spinner = document.getElementById('fetch-spinner');
+  const text = document.getElementById('fetch-btn-text');
+  if (loading) {
+    btn.disabled = true; btn.style.opacity = '0.7';
+    icon.classList.add('hidden'); spinner.classList.remove('hidden');
+    text.textContent = '불러오는 중...';
+  } else {
+    btn.disabled = false; btn.style.opacity = '1';
+    icon.classList.remove('hidden'); spinner.classList.add('hidden');
+    text.textContent = '모델 불러오기';
+  }
+}
+
+async function fetchModelsFromKey() {
+  const apiKey = document.getElementById('setting-apikey').value.trim();
+  if (!apiKey || apiKey.length < 5) {
+    showSettingsMsg('API 키를 입력해주세요.', 'rose');
+    return;
+  }
+
+  setFetchLoading(true);
+  showSettingsMsg('API에서 사용 가능한 모델을 가져오는 중...', 'blue');
+
+  try {
+    const result = await api('/api/detect-models', { api_key: apiKey });
+    setFetchLoading(false);
+
+    if (result.error) {
+      showSettingsMsg(result.message, 'rose');
+      resetProviderAndModel();
+      return;
+    }
+
+    fetchedProvider = result.provider;
+    fetchedModels = result.models;
+
+    const prov = document.getElementById('setting-provider');
+    prov.value = result.provider;
+    prov.disabled = false; prov.style.opacity = '1'; prov.style.cursor = '';
+    document.getElementById('provider-auto-label').classList.remove('hidden');
+
+    const sel = document.getElementById('setting-model');
+    sel.innerHTML = '';
+    sel.disabled = false; sel.style.opacity = '1'; sel.style.cursor = '';
+
+    const savedModel = currentConfig.model || '';
+    result.models.forEach((m, i) => {
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = m;
+      if (m === savedModel || (i === 0 && !savedModel)) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    document.getElementById('model-count').textContent = result.models.length + '개 모델 사용 가능';
+    const provName = result.provider === 'openai' ? 'OpenAI' : 'Gemini';
+    showSettingsMsg(provName + '에서 ' + result.models.length + '개 모델을 불러왔습니다! \u2713', 'emerald');
+  } catch(e) {
+    setFetchLoading(false);
+    showSettingsMsg('모델을 불러오는 중 오류가 발생했습니다.', 'rose');
+    resetProviderAndModel();
+  }
+}
+
+async function saveSettings() {
+  const provider = document.getElementById('setting-provider').value;
+  const apiKey = document.getElementById('setting-apikey').value.trim();
+  const model = document.getElementById('setting-model').value;
+
+  if (!apiKey) { showSettingsMsg('API 키를 입력해주세요.', 'rose'); return; }
+  if (!provider) { showSettingsMsg('모델을 먼저 불러와주세요.', 'rose'); return; }
+  if (!model) { showSettingsMsg('모델을 선택해주세요.', 'rose'); return; }
+
+  try {
+    await api('/api/settings', { provider, api_key: apiKey, model });
+    showSettingsMsg('설정이 저장되었습니다! \u2713', 'emerald');
+    currentConfig.api_provider = provider;
+    currentConfig.api_key = apiKey;
+    currentConfig.model = model;
+    updateProviderBadge(currentConfig);
+    setTimeout(closeSettings, 1000);
+  } catch(e) {
+    showSettingsMsg('저장 중 오류가 발생했습니다.', 'rose');
+  }
+}
+
+function showSettingsMsg(msg, color) {
+  const el = document.getElementById('settings-msg');
+  el.textContent = msg;
+  el.className = 'text-center text-sm mt-4 text-accent-' + color;
+}
+
+function updateProviderBadge(config) {
+  const badge = document.getElementById('provider-badge');
+  if (config.api_key && config.model) {
+    badge.style.display = 'inline-flex';
+    const name = config.api_provider === 'openai' ? 'OpenAI' : 'Gemini';
+    badge.textContent = name + ' \xb7 ' + config.model;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const config = await api('/api/config');
+    currentConfig = config;
+    updateProviderBadge(config);
+    if (!config.api_key) {
+      setTimeout(openSettings, 600);
+    }
+  } catch(e) {}
+});
+</script>
+</body>
+</html>

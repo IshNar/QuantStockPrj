@@ -1,0 +1,11 @@
+# Core runtime
+flask>=3.1
+requests>=2.31
+beautifulsoup4>=4.9
+
+# Desktop app runtime
+pywebview>=5.0
+pythonnet>=3.0
+
+# Windows build
+pyinstaller>=6.0

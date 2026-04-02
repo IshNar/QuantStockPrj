@@ -1,0 +1,9 @@
+# Mobile app runtime
+flask>=3.1
+requests>=2.31
+beautifulsoup4>=4.9
+
+# Android build tooling
+buildozer>=1.5
+cython<3
+setuptools>=65
